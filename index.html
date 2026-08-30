@@ -1,0 +1,1029 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+
+<meta charset="UTF-8">
+
+<meta
+  name="viewport"
+  content="width=device-width, initial-scale=1"
+>
+
+<title>Absensi</title>
+
+<style>
+
+*{
+  box-sizing:border-box;
+}
+
+body{
+
+  margin:0;
+
+  font-family:
+    'Segoe UI',
+    Arial,
+    sans-serif;
+
+  background:
+    linear-gradient(
+      135deg,
+      #0f5132,
+      #198754
+    );
+
+  min-height:100vh;
+
+  color:#333;
+
+}
+
+
+/* =========================
+   CONTAINER
+========================= */
+
+.container{
+
+  width:100%;
+
+  max-width:560px;
+
+  margin:0 auto;
+
+  padding:20px;
+
+}
+
+
+/* =========================
+   HEADER
+========================= */
+
+.header{
+
+  background:#fff;
+
+  border-radius:20px;
+
+  padding:30px 25px;
+
+  text-align:center;
+
+  box-shadow:
+    0 15px 40px
+    rgba(0,0,0,.25);
+
+  margin-bottom:20px;
+
+}
+
+.logo{
+
+  width:90px;
+
+  max-width:100%;
+
+  margin-bottom:10px;
+
+}
+
+.header h1{
+
+  margin:5px 0;
+
+  color:#198754;
+
+  font-size:26px;
+
+}
+
+.header p{
+
+  margin:8px 0;
+
+  color:#666;
+
+}
+
+
+/* =========================
+   EVENT INFO
+========================= */
+
+.event-info{
+
+  background:#fff;
+
+  border-radius:18px;
+
+  padding:20px;
+
+  box-shadow:
+    0 10px 30px
+    rgba(0,0,0,.18);
+
+  margin-bottom:20px;
+
+}
+
+.event-title{
+
+  color:#198754;
+
+  font-size:20px;
+
+  font-weight:700;
+
+  margin-bottom:15px;
+
+}
+
+.info-row{
+
+  background:#f1f8f4;
+
+  border-radius:10px;
+
+  padding:11px 13px;
+
+  margin:8px 0;
+
+  font-size:15px;
+
+}
+
+
+/* =========================
+   FORM
+========================= */
+
+.form-card{
+
+  background:#fff;
+
+  border-radius:18px;
+
+  padding:25px;
+
+  box-shadow:
+    0 10px 30px
+    rgba(0,0,0,.18);
+
+}
+
+.form-card h2{
+
+  text-align:center;
+
+  margin-top:0;
+
+  margin-bottom:20px;
+
+  color:#333;
+
+}
+
+label{
+
+  display:block;
+
+  font-weight:600;
+
+  margin-top:15px;
+
+  margin-bottom:7px;
+
+}
+
+select,
+input{
+
+  width:100%;
+
+  padding:13px;
+
+  border:1px solid #ccc;
+
+  border-radius:10px;
+
+  font-size:15px;
+
+  background:#fff;
+
+}
+
+button{
+
+  width:100%;
+
+  padding:14px;
+
+  margin-top:20px;
+
+  border:0;
+
+  border-radius:10px;
+
+  background:#198754;
+
+  color:#fff;
+
+  font-size:16px;
+
+  font-weight:600;
+
+  cursor:pointer;
+
+}
+
+button:hover{
+
+  background:#146c43;
+
+}
+
+button:disabled{
+
+  background:#aaa;
+
+  cursor:not-allowed;
+
+}
+
+
+/* =========================
+   STATUS
+========================= */
+
+.status{
+
+  display:none;
+
+  margin-top:15px;
+
+  padding:12px;
+
+  border-radius:10px;
+
+  text-align:center;
+
+}
+
+.status.success{
+
+  display:block;
+
+  background:#e9f7ef;
+
+  color:#198754;
+
+}
+
+.status.error{
+
+  display:block;
+
+  background:#fdeaea;
+
+  color:#dc3545;
+
+}
+
+.loading{
+
+  text-align:center;
+
+  color:#666;
+
+  padding:15px;
+
+}
+
+
+/* =========================
+   FOOTER
+========================= */
+
+.footer{
+
+  text-align:center;
+
+  color:rgba(255,255,255,.8);
+
+  font-size:13px;
+
+  margin-top:20px;
+
+}
+
+
+/* =========================
+   MOBILE
+========================= */
+
+@media(max-width:600px){
+
+  .container{
+
+    padding:12px;
+
+  }
+
+  .header{
+
+    padding:25px 18px;
+
+  }
+
+  .header h1{
+
+    font-size:23px;
+
+  }
+
+}
+
+</style>
+
+</head>
+
+
+<body>
+
+
+<div class="container">
+
+
+  <!-- HEADER -->
+
+  <div class="header">
+
+    <img
+      src="https://i.ibb.co.com/5WWKSY0Z/Logo-IAI-Grobogan-b.png"
+      class="logo"
+      alt="Logo"
+    >
+
+    <h1>
+      📋 Absensi Kegiatan
+    </h1>
+
+    <p>
+      Konfirmasi kehadiran peserta
+    </p>
+
+  </div>
+
+
+
+  <!-- EVENT -->
+
+  <div
+    class="event-info"
+    id="eventInfo"
+  >
+
+    <div class="loading">
+
+      Memuat informasi acara...
+
+    </div>
+
+  </div>
+
+
+
+  <!-- FORM -->
+
+  <div class="form-card">
+
+    <h2>
+      📝 Absensi
+    </h2>
+
+
+    <label for="nama">
+
+      Nama Peserta
+
+    </label>
+
+
+    <select id="nama">
+
+      <option value="">
+
+        Memuat peserta...
+
+      </option>
+
+    </select>
+
+
+    <label for="statusAbsensi">
+
+      Status Kehadiran
+
+    </label>
+
+
+    <select id="statusAbsensi">
+
+      <option value="">
+
+        -- Pilih Status --
+
+      </option>
+
+      <option value="Hadir">
+
+        Hadir
+
+      </option>
+
+    </select>
+
+
+    <button
+      id="btnAbsen"
+      onclick="kirimAbsensi()"
+    >
+
+      Simpan Absensi
+
+    </button>
+
+
+    <div
+      id="status"
+      class="status"
+    ></div>
+
+
+  </div>
+
+
+
+  <div class="footer">
+
+    Sistem Absensi Kegiatan
+
+  </div>
+
+
+</div>
+
+
+
+<script>
+
+
+/* ==========================================
+   KONFIGURASI
+========================================== */
+
+
+const API_URL =
+  'https://script.google.com/macros/s/AKfycbzQJl6ixktTvRMz1F4rXiyEWHfAWP6O6U8divvmlH8gSD1oLBjiqlET6wq6ikI1F0XflQ/exec';
+
+
+
+/* ==========================================
+   AMBIL ID EVENT DARI URL
+========================================== */
+
+
+function getEventId(){
+
+  const params =
+    new URLSearchParams(
+      window.location.search
+    );
+
+  return (
+    params.get('event') || ''
+  ).trim();
+
+}
+
+
+
+const EVENT_ID =
+  getEventId();
+
+
+
+/* ==========================================
+   STATUS MESSAGE
+========================================== */
+
+
+function showStatus(
+  message,
+  type
+){
+
+  const el =
+    document.getElementById(
+      'status'
+    );
+
+  el.textContent =
+    message;
+
+  el.className =
+    'status ' + type;
+
+}
+
+
+
+/* ==========================================
+   LOAD EVENT
+========================================== */
+
+
+async function loadEvent(){
+
+  if(!EVENT_ID){
+
+    document.getElementById(
+      'eventInfo'
+    ).innerHTML = `
+
+      <div class="status error"
+           style="display:block">
+
+        ID acara tidak ditemukan.
+
+      </div>
+
+    `;
+
+    document.getElementById(
+      'btnAbsen'
+    ).disabled = true;
+
+    return;
+
+  }
+
+
+  try{
+
+    const url =
+      API_URL +
+      '?action=event&id_event=' +
+      encodeURIComponent(
+        EVENT_ID
+      );
+
+
+    const response =
+      await fetch(
+        url,
+        {
+          cache:'no-store'
+        }
+      );
+
+
+    const result =
+      await response.json();
+
+
+    if(
+      !result.success
+    ){
+
+      throw new Error(
+        result.message ||
+        'Acara tidak ditemukan.'
+      );
+
+    }
+
+
+    const event =
+      result.event;
+
+
+    document.getElementById(
+      'eventInfo'
+    ).innerHTML = `
+
+      <div class="event-title">
+
+        ${escapeHtml(
+          event.JUDUL || EVENT_ID
+        )}
+
+      </div>
+
+      <div class="info-row">
+
+        📅 <b>Tanggal:</b>
+        ${escapeHtml(
+          event.TANGGAL || '-'
+        )}
+
+      </div>
+
+      <div class="info-row">
+
+        🕐 <b>Waktu:</b>
+        ${escapeHtml(
+          event.WAKTU || '-'
+        )}
+
+      </div>
+
+      <div class="info-row">
+
+        📍 <b>Tempat:</b>
+        ${escapeHtml(
+          event.TEMPAT || '-'
+        )}
+
+      </div>
+
+    `;
+
+
+  }catch(error){
+
+    console.error(error);
+
+    document.getElementById(
+      'eventInfo'
+    ).innerHTML = `
+
+      <div class="status error"
+           style="display:block">
+
+        Gagal memuat informasi acara.
+
+      </div>
+
+    `;
+
+  }
+
+}
+
+
+
+/* ==========================================
+   LOAD PESERTA DARI POLLING
+========================================== */
+
+
+async function loadPeserta(){
+
+  const select =
+    document.getElementById(
+      'nama'
+    );
+
+
+  if(!EVENT_ID){
+
+    select.innerHTML = `
+
+      <option value="">
+
+        ID acara tidak ditemukan
+
+      </option>
+
+    `;
+
+    return;
+
+  }
+
+
+  try{
+
+    const url =
+      API_URL +
+      '?action=peserta_absensi&id_event=' +
+      encodeURIComponent(
+        EVENT_ID
+      );
+
+
+    const response =
+      await fetch(
+        url,
+        {
+          cache:'no-store'
+        }
+      );
+
+
+    const result =
+      await response.json();
+
+
+    console.log(
+      'RESPON PESERTA:',
+      result
+    );
+
+
+    if(
+      !result.success
+    ){
+
+      throw new Error(
+        result.message ||
+        'Gagal mengambil peserta.'
+      );
+
+    }
+
+
+    const peserta =
+      Array.isArray(
+        result.data
+      )
+        ? result.data
+        : [];
+
+
+    select.innerHTML = `
+
+      <option value="">
+
+        -- Pilih Nama --
+
+      </option>
+
+    `;
+
+
+    if(
+      peserta.length === 0
+    ){
+
+      select.innerHTML = `
+
+        <option value="">
+
+          Belum ada peserta yang polling HADIR
+
+        </option>
+
+      `;
+
+      document.getElementById(
+        'btnAbsen'
+      ).disabled = true;
+
+      return;
+
+    }
+
+
+    peserta.forEach(
+      function(item){
+
+        const option =
+          document.createElement(
+            'option'
+          );
+
+
+        option.value =
+          item.NAMA;
+
+
+        option.textContent =
+          item.NAMA;
+
+
+        select.appendChild(
+          option
+        );
+
+      }
+    );
+
+
+  }catch(error){
+
+    console.error(error);
+
+    select.innerHTML = `
+
+      <option value="">
+
+        Gagal memuat peserta
+
+      </option>
+
+    `;
+
+    showStatus(
+      error.message ||
+      'Gagal mengambil peserta polling.',
+      'error'
+    );
+
+  }
+
+}
+
+
+
+/* ==========================================
+   KIRIM ABSENSI
+========================================== */
+
+
+async function kirimAbsensi(){
+
+  const nama =
+    document.getElementById(
+      'nama'
+    ).value.trim();
+
+
+  const statusAbsensi =
+    document.getElementById(
+      'statusAbsensi'
+    ).value;
+
+
+  if(!EVENT_ID){
+
+    showStatus(
+      'ID acara tidak ditemukan.',
+      'error'
+    );
+
+    return;
+
+  }
+
+
+  if(!nama){
+
+    showStatus(
+      'Silakan pilih nama peserta.',
+      'error'
+    );
+
+    return;
+
+  }
+
+
+  if(!statusAbsensi){
+
+    showStatus(
+      'Silakan pilih status kehadiran.',
+      'error'
+    );
+
+    return;
+
+  }
+
+
+  const button =
+    document.getElementById(
+      'btnAbsen'
+    );
+
+
+  button.disabled =
+    true;
+
+  button.textContent =
+    'Menyimpan...';
+
+
+  try{
+
+    /*
+     * BAGIAN SIMPAN ABSENSI
+     *
+     * AKAN KITA SAMBUNGKAN
+     * SETELAH API ABSENSI
+     * SIAP.
+     */
+
+
+    console.log({
+
+      ID_EVENT:
+        EVENT_ID,
+
+      NAMA:
+        nama,
+
+      STATUS_ABSEN:
+        statusAbsensi
+
+    });
+
+
+    showStatus(
+      'Peserta berhasil dipilih. Penyimpanan absensi akan kita sambungkan pada tahap berikutnya.',
+      'success'
+    );
+
+
+  }catch(error){
+
+    console.error(error);
+
+    showStatus(
+      error.message ||
+      'Gagal menyimpan absensi.',
+      'error'
+    );
+
+  }
+
+
+  button.disabled =
+    false;
+
+  button.textContent =
+    'Simpan Absensi';
+
+}
+
+
+
+/* ==========================================
+   ESCAPE HTML
+========================================== */
+
+
+function escapeHtml(
+  value
+){
+
+  return String(
+    value ?? ''
+  )
+
+  .replace(
+    /&/g,
+    '&amp;'
+  )
+
+  .replace(
+    /</g,
+    '&lt;'
+  )
+
+  .replace(
+    />/g,
+    '&gt;'
+  )
+
+  .replace(
+    /"/g,
+    '&quot;'
+  )
+
+  .replace(
+    /'/g,
+    '&#039;'
+  );
+
+}
+
+
+
+/* ==========================================
+   INIT
+========================================== */
+
+
+document.addEventListener(
+  'DOMContentLoaded',
+  function(){
+
+    loadEvent();
+
+    loadPeserta();
+
+  }
+);
+
+
+</script>
+
+
+</body>
+
+</html>
