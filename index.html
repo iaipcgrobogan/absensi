@@ -362,7 +362,7 @@ button:disabled{
   <div class="header">
 
     <img
-      src="https://i.ibb.co.com/5WWKSY0Z/Logo-IAI-Grobogan-b.png"
+      src="https://i.ibb.co/5WWKSY0Z/Logo-IAI-Grobogan-b.png"
       class="logo"
       alt="Logo"
     >
@@ -677,7 +677,7 @@ async function loadEvent(){
 
 
 /* ==========================================
-   LOAD PESERTA DARI POLLING
+   LOAD PESERTA DARI PENDAFTARAN
 ========================================== */
 
 
@@ -774,7 +774,7 @@ async function loadPeserta(){
 
         <option value="">
 
-          Belum ada peserta yang polling HADIR
+          Belum ada peserta yang terdaftar untuk acara ini
 
         </option>
 
@@ -803,7 +803,16 @@ async function loadPeserta(){
 
 
         option.textContent =
-          item.NAMA;
+          item.SUDAH_ABSEN
+            ? '✓ ' + item.NAMA + ' (Sudah Absen)'
+            : item.NAMA;
+
+
+        if(item.SUDAH_ABSEN){
+
+          option.disabled = true;
+
+        }
 
 
         select.appendChild(
@@ -830,7 +839,7 @@ async function loadPeserta(){
 
     showStatus(
       error.message ||
-      'Gagal mengambil peserta polling.',
+      'Gagal mengambil peserta dari PENDAFTARAN.',
       'error'
     );
 
@@ -910,33 +919,60 @@ async function kirimAbsensi(){
 
   try{
 
-    /*
-     * BAGIAN SIMPAN ABSENSI
-     *
-     * AKAN KITA SAMBUNGKAN
-     * SETELAH API ABSENSI
-     * SIAP.
-     */
+    const url =
+      API_URL +
+      '?action=simpan_absensi&id_event=' +
+      encodeURIComponent(
+        EVENT_ID
+      ) +
+      '&nama=' +
+      encodeURIComponent(
+        nama
+      );
 
 
-    console.log({
+    const response =
+      await fetch(
+        url,
+        {
+          cache:'no-store'
+        }
+      );
 
-      ID_EVENT:
-        EVENT_ID,
 
-      NAMA:
-        nama,
+    const result =
+      await response.json();
 
-      STATUS_ABSEN:
-        statusAbsensi
 
-    });
+    if(
+      !result.success
+    ){
+
+      throw new Error(
+        result.message ||
+        'Gagal menyimpan absensi.'
+      );
+
+    }
 
 
     showStatus(
-      'Peserta berhasil dipilih. Penyimpanan absensi akan kita sambungkan pada tahap berikutnya.',
+      result.message ||
+      'Absensi berhasil disimpan.',
       'success'
     );
+
+
+    document.getElementById(
+      'statusAbsensi'
+    ).value = '';
+
+
+    /*
+     * Muat ulang daftar peserta agar peserta
+     * yang baru absen langsung ditandai.
+     */
+    await loadPeserta();
 
 
   }catch(error){
