@@ -42,6 +42,18 @@ button:disabled{background:#aaa;cursor:not-allowed}
 .notice{margin-top:15px;padding:14px;border-radius:10px;background:#fff8e1;color:#7a5b00;line-height:1.5}
 .footer{text-align:center;color:rgba(255,255,255,.85);font-size:13px;margin-top:20px;padding-bottom:8px}
 .small{font-size:13px;color:#777;margin-top:7px}
+.summary-card{background:#fff;border-radius:20px;box-shadow:0 15px 40px rgba(0,0,0,.22);padding:18px;margin-bottom:20px}
+.summary-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+.summary-item{background:#f7f9fb;border:1px solid #e9edf1;border-radius:12px;padding:13px 8px;text-align:center}
+.summary-label{display:block;font-size:12px;color:#6b7280}
+.summary-number{display:block;font-size:25px;font-weight:800;margin-top:4px}
+.status-pill{display:inline-block;padding:5px 10px;border-radius:999px;font-size:12px;font-weight:800}
+.status-open{background:#d1e7dd;color:#146c43}
+.status-closed{background:#f8d7da;color:#b02a37}
+.already-box{margin-top:14px;padding:12px;border-radius:10px;background:#eef6ff;color:#0b5ed7;font-weight:600}
+.detail-link{color:#0d6efd;text-decoration:none;font-weight:600}
+@media(max-width:600px){.summary-grid{grid-template-columns:1fr 1fr}}
+
 @media(max-width:600px){.container{padding:12px}.header{padding:25px 18px}.header h1{font-size:23px}.search-row{flex-direction:column}.search-row button{width:100%}}
 </style>
 </head>
@@ -62,6 +74,27 @@ button:disabled{background:#aaa;cursor:not-allowed}
     <div id="eventStatus" class="status"></div>
   </div>
 
+  <div id="summaryCard" class="summary-card hidden">
+    <div class="summary-grid">
+      <div class="summary-item">
+        <span class="summary-label">Total Pendaftar</span>
+        <span class="summary-number" id="sumTotal">0</span>
+      </div>
+      <div class="summary-item">
+        <span class="summary-label">Sudah Absen</span>
+        <span class="summary-number" id="sumSudah">0</span>
+      </div>
+      <div class="summary-item">
+        <span class="summary-label">Belum Absen</span>
+        <span class="summary-number" id="sumBelum">0</span>
+      </div>
+      <div class="summary-item">
+        <span class="summary-label">Persentase Absen</span>
+        <span class="summary-number" id="sumPersen">0%</span>
+      </div>
+    </div>
+  </div>
+
   <div id="searchCard" class="form-card hidden">
     <h2>🔎 Cari Nama Peserta</h2>
     <label for="namaSearch">Nama Peserta</label>
@@ -75,22 +108,27 @@ button:disabled{background:#aaa;cursor:not-allowed}
 
   <div id="resultCard" class="result-card hidden">
     <h3>✅ Peserta Terdaftar</h3>
-    <div class="data-row"><span class="data-label">Nama</span><span class="data-value" id="resultNama">-</span></div>
-    <div class="data-row"><span class="data-label">NIK</span><span class="data-value" id="resultNIK">-</span></div>
-    <div class="data-row"><span class="data-label">Asal PC</span><span class="data-value" id="resultAsalPC">-</span></div>
-    <div class="data-row"><span class="data-label">Instansi</span><span class="data-value" id="resultInstansi">-</span></div>
+    <div id="participantDetails"></div>
 
-    <label for="statusAbsensi">Jenis Kehadiran</label>
-    <select id="statusAbsensi">
-      <option value="">-- Pilih Kehadiran --</option>
-      <option value="Hadir">Hadir</option>
-      <option value="Tidak Hadir">Tidak Hadir</option>
-    </select>
-    <button type="button" id="btnSubmit" onclick="submitAbsensi()">SUBMIT ABSENSI</button>
-    <div id="submitStatus" class="status"></div>
+    <div id="alreadyAbsentBox" class="already-box hidden"></div>
+
+    <div id="attendanceInputArea">
+      <label for="statusAbsensi">Jenis Kehadiran</label>
+      <select id="statusAbsensi">
+        <option value="">-- Pilih Kehadiran --</option>
+        <option value="Hadir">Hadir</option>
+        <option value="Tidak Hadir">Tidak Hadir</option>
+      </select>
+
+      <button type="button" id="btnSubmit" onclick="submitAbsensi()">
+        SUBMIT ABSENSI
+      </button>
+
+      <div id="submitStatus" class="status"></div>
+    </div>
   </div>
 
-  <div id="notFoundCard" class="result-card hidden" style="border-left-color:#dc3545">
+  <div id="notFoundCard class="result-card hidden" style="border-left-color:#dc3545">
     <h3 style="color:#dc3545">❌ Peserta Tidak Ditemukan</h3>
     <div class="notice">Nama Anda belum terdaftar pada acara ini, sehingga tidak dapat mengisi absensi. <b>Harap hubungi panitia.</b></div>
   </div>
@@ -98,131 +136,859 @@ button:disabled{background:#aaa;cursor:not-allowed}
   <div class="footer">Sistem Absensi Kegiatan • PC IAI Grobogan</div>
 </div>
 <script>
-const API_URL = 'https://script.google.com/macros/s/AKfycbzQJl6ixktTvRMz1F4rXiyEWHfAWP6O6U8divvmlH8gSD1oLBjiqlET6wq6ikI1F0XflQ/exec';
+const API_URL =
+  'https://script.google.com/macros/s/AKfycbzQJl6ixktTvRMz1F4rXiyEWHfAWP6O6U8divvmlH8gSD1oLBjiqlET6wq6ikI1F0XflQ/exec';
+
 let selectedEventId = '';
 let selectedEvent = null;
 let pesertaEvent = [];
 let pesertaTerpilih = null;
 
-function $(id) { return document.getElementById(id); }
-function showStatus(id, message, type) { const el=$(id); el.textContent=message||''; el.className='status '+(type||'info'); }
-function hideStatus(id) { const el=$(id); el.className='status'; el.textContent=''; }
-function escapeHtml(value) { return String(value ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;'); }
-function fmt(value) { return value ? escapeHtml(value) : '-'; }
+function $(id) {
+  return document.getElementById(id);
+}
+
+function showStatus(id, message, type) {
+  const el = $(id);
+  el.textContent = message || '';
+  el.className = 'status ' + (type || 'info');
+}
+
+function hideStatus(id) {
+  const el = $(id);
+  el.textContent = '';
+  el.className = 'status';
+}
+
+function escapeHtml(value) {
+  return String(value ?? '')
+    .replace(/&/g,'&amp;')
+    .replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;')
+    .replace(/'/g,'&#039;');
+}
+
+function fmt(value) {
+  return value ? escapeHtml(value) : '-';
+}
+
+function isYa(value, defaultValue) {
+  return String(
+    value ?? defaultValue ?? 'TIDAK'
+  )
+    .trim()
+    .toUpperCase() === 'YA';
+}
 
 async function apiGet(url) {
-  const response=await fetch(url,{cache:'no-store'});
-  const result=await response.json();
-  if(!result || !result.success) throw new Error(result?.message || 'Terjadi kesalahan pada server.');
+  const response =
+    await fetch(
+      url,
+      {cache:'no-store'}
+    );
+
+  const result =
+    await response.json();
+
+  if (
+    !result ||
+    !result.success
+  ) {
+    throw new Error(
+      result?.message ||
+      'Terjadi kesalahan pada server.'
+    );
+  }
+
   return result;
 }
 
-async function loadEvents() {
-  const select=$('eventSelect');
-  try {
-    const result=await apiGet(API_URL+'?action=events');
-    const events=Array.isArray(result.data)?result.data:[];
-    select.innerHTML='<option value="">-- Pilih Acara --</option>';
-    events.forEach(ev=>{
-      const opt=document.createElement('option');
-      opt.value=ev.ID_EVENT||'';
-      opt.textContent=(ev.JUDUL||ev.ID_EVENT||'Acara')+' ('+(ev.ID_EVENT||'')+')';
-      select.appendChild(opt);
-    });
-    const params=new URLSearchParams(window.location.search);
-    const urlEvent=(params.get('event')||'').trim();
-    if(urlEvent && events.some(e=>String(e.ID_EVENT||'').trim().toUpperCase()===urlEvent.toUpperCase())) {
-      select.value=events.find(e=>String(e.ID_EVENT||'').trim().toUpperCase()===urlEvent.toUpperCase()).ID_EVENT;
-      await pilihEvent();
-    }
-    if(!events.length) showStatus('eventStatus','Belum ada acara yang tersedia.','error');
-  } catch(error) {
-    console.error(error);
-    select.innerHTML='<option value="">Gagal memuat acara</option>';
-    showStatus('eventStatus',error.message||'Gagal memuat daftar acara.','error');
+function setSummary(summary) {
+
+  summary = summary || {};
+
+  const total =
+    Number(summary.total || 0);
+
+  const sudah =
+    Number(
+      summary.sudah_absen ??
+      (
+        Number(summary.hadir || 0) +
+        Number(summary.tidak_hadir || 0)
+      )
+    );
+
+  const belum =
+    Number(
+      summary.belum_absen ??
+      Math.max(total - sudah, 0)
+    );
+
+  const persen =
+    total > 0
+      ? Number(
+          (sudah / total * 100).toFixed(2)
+        )
+      : 0;
+
+  $('sumTotal').textContent =
+    total;
+
+  $('sumSudah').textContent =
+    sudah;
+
+  $('sumBelum').textContent =
+    belum;
+
+  $('sumPersen').textContent =
+    persen + '%';
+
+  $('summaryCard')
+    .classList.remove('hidden');
+}
+
+function resetSummary() {
+
+  $('summaryCard')
+    .classList.add('hidden');
+
+  $('sumTotal').textContent = '0';
+  $('sumSudah').textContent = '0';
+  $('sumBelum').textContent = '0';
+  $('sumPersen').textContent = '0%';
+}
+
+function renderEventDetail(event) {
+
+  const parts = [];
+
+  if (
+    isYa(event.TAMPIL_TANGGAL, 'YA')
+  ) {
+    parts.push(
+      '📅 ' +
+      fmt(event.TANGGAL)
+    );
+  }
+
+  if (
+    isYa(event.TAMPIL_WAKTU, 'YA')
+  ) {
+    parts.push(
+      '🕐 ' +
+      fmt(event.WAKTU)
+    );
+  }
+
+  if (
+    isYa(event.TAMPIL_TEMPAT, 'YA')
+  ) {
+    parts.push(
+      '📍 ' +
+      fmt(event.TEMPAT)
+    );
+  }
+
+  const status =
+    String(
+      event.STATUS_ABSENSI_AKTUAL ||
+      event.STATUS_ABSENSI ||
+      'DITUTUP'
+    )
+      .trim()
+      .toUpperCase();
+
+  $('eventDetail').innerHTML =
+    '<b>' +
+    escapeHtml(
+      event.JUDUL ||
+      selectedEventId
+    ) +
+    '</b>' +
+    (
+      parts.length
+        ? '<br>' + parts.join(' &nbsp; ')
+        : ''
+    ) +
+    '<br><span style="color:#666">Status Absensi: </span>' +
+    '<span class="' +
+    (
+      status === 'DIBUKA'
+        ? 'status-pill status-open'
+        : 'status-pill status-closed'
+    ) +
+    '">' +
+    (
+      status === 'DIBUKA'
+        ? 'DIBUKA'
+        : 'DITUTUP'
+    ) +
+    '</span>';
+
+  $('eventDetail')
+    .classList.remove('hidden');
+
+  if (status === 'DIBUKA') {
+    hideStatus('eventStatus');
+  } else {
+    showStatus(
+      'eventStatus',
+      'Absensi untuk acara ini sudah ditutup.',
+      'error'
+    );
   }
 }
 
-$('eventSelect').addEventListener('change', pilihEvent);
-$('namaSearch').addEventListener('keydown', e=>{ if(e.key==='Enter') cariPeserta(); });
+function renderParticipant(participant) {
+
+  const event =
+    selectedEvent || {};
+
+  const rows = [];
+
+  function addRow(label, value) {
+    rows.push(
+      '<div class="data-row">' +
+        '<span class="data-label">' +
+          label +
+        '</span>' +
+        '<span class="data-value">' +
+          value +
+        '</span>' +
+      '</div>'
+    );
+  }
+
+  /*
+   * Nama selalu ditampilkan.
+   */
+  addRow(
+    'Nama',
+    fmt(participant.NAMA)
+  );
+
+  /*
+   * Field berikut mengikuti konfigurasi EVENT.
+   */
+  if (
+    isYa(event.TAMPIL_NIK, 'YA')
+  ) {
+    addRow(
+      'NIK',
+      fmt(participant.NIK)
+    );
+  }
+
+  if (
+    isYa(event.TAMPIL_EMAIL, 'YA')
+  ) {
+    addRow(
+      'Email',
+      fmt(participant.EMAIL)
+    );
+  }
+
+  if (
+    isYa(event.TAMPIL_ASAL_PC, 'TIDAK')
+  ) {
+    addRow(
+      'Asal PC',
+      fmt(participant.ASAL_PC)
+    );
+  }
+
+  if (
+    isYa(event.TAMPIL_INSTANSI, 'TIDAK')
+  ) {
+    addRow(
+      'Instansi',
+      fmt(participant.INSTANSI)
+    );
+  }
+
+  if (
+    isYa(event.TAMPIL_NO_TELP, 'TIDAK')
+  ) {
+    addRow(
+      'No. Telp / WhatsApp',
+      fmt(participant.NO_TELP)
+    );
+  }
+
+  if (
+    isYa(event.TAMPIL_PEMBAYARAN, 'TIDAK')
+  ) {
+    const bukti =
+      String(
+        participant.BUKTI_PEMBAYARAN || ''
+      ).trim();
+
+    addRow(
+      'Bukti Pembayaran',
+      bukti
+        ? '<a class="detail-link" href="' +
+          escapeHtml(bukti) +
+          '" target="_blank" rel="noopener">' +
+          'Lihat Bukti</a>'
+        : '-'
+    );
+  }
+
+  $('participantDetails').innerHTML =
+    rows.join('');
+}
+
+function resetParticipant() {
+
+  $('resultCard')
+    .classList.add('hidden');
+
+  $('notFoundCard')
+    .classList.add('hidden');
+
+  $('participantDetails')
+    .innerHTML = '';
+
+  $('alreadyAbsentBox')
+    .classList.add('hidden');
+
+  $('alreadyAbsentBox')
+    .innerHTML = '';
+
+  $('attendanceInputArea')
+    .style.display = 'block';
+
+  $('statusAbsensi').disabled = false;
+  $('statusAbsensi').value = '';
+
+  $('btnSubmit').disabled = false;
+  $('btnSubmit').textContent =
+    'SUBMIT ABSENSI';
+
+  hideStatus('searchStatus');
+  hideStatus('submitStatus');
+}
+
+async function loadEvents() {
+
+  try {
+
+    const result =
+      await apiGet(
+        API_URL +
+        '?action=events'
+      );
+
+    /*
+     * Absensi hanya menampilkan event yang
+     * memang memakai alur PENDAFTARAN.
+     */
+    const events =
+      Array.isArray(result.data)
+        ? result.data.filter(
+            function(event) {
+              return isYa(
+                event.PENDAFTARAN,
+                'TIDAK'
+              );
+            }
+          )
+        : [];
+
+    const select =
+      $('eventSelect');
+
+    select.innerHTML =
+      '<option value="">-- Pilih Acara --</option>';
+
+    events.forEach(
+      function(event) {
+
+        const option =
+          document.createElement('option');
+
+        option.value =
+          event.ID_EVENT || '';
+
+        option.textContent =
+          (
+            event.JUDUL ||
+            event.ID_EVENT ||
+            'Acara'
+          ) +
+          ' (' +
+          (event.ID_EVENT || '') +
+          ')';
+
+        select.appendChild(option);
+      }
+    );
+
+    const params =
+      new URLSearchParams(
+        window.location.search
+      );
+
+    const urlEvent =
+      (
+        params.get('event') ||
+        ''
+      ).trim();
+
+    if (urlEvent) {
+
+      const found =
+        events.find(
+          function(event) {
+            return String(
+              event.ID_EVENT || ''
+            )
+              .trim()
+              .toUpperCase() ===
+              urlEvent.toUpperCase();
+          }
+        );
+
+      if (found) {
+        select.value =
+          found.ID_EVENT;
+
+        await pilihEvent();
+      }
+    }
+
+    if (!events.length) {
+      showStatus(
+        'eventStatus',
+        'Belum ada acara pendaftaran yang tersedia.',
+        'error'
+      );
+    }
+
+  } catch (error) {
+
+    console.error(error);
+
+    $('eventSelect').innerHTML =
+      '<option value="">Gagal memuat acara</option>';
+
+    showStatus(
+      'eventStatus',
+      error.message ||
+      'Gagal memuat daftar acara.',
+      'error'
+    );
+  }
+}
+
+$('eventSelect')
+  .addEventListener(
+    'change',
+    pilihEvent
+  );
+
+$('namaSearch')
+  .addEventListener(
+    'keydown',
+    function(event) {
+      if (event.key === 'Enter') {
+        cariPeserta();
+      }
+    }
+  );
 
 async function pilihEvent() {
-  selectedEventId=$('eventSelect').value.trim();
-  selectedEvent=null; pesertaEvent=[]; pesertaTerpilih=null;
-  $('resultCard').classList.add('hidden');
-  $('notFoundCard').classList.add('hidden');
-  $('searchCard').classList.add('hidden');
-  $('namaSearch').value='';
-  $('statusAbsensi').value='';
-  hideStatus('eventStatus'); hideStatus('searchStatus'); hideStatus('submitStatus');
-  $('eventDetail').classList.add('hidden');
-  if(!selectedEventId) return;
+
+  selectedEventId =
+    $('eventSelect')
+      .value
+      .trim();
+
+  selectedEvent = null;
+  pesertaEvent = [];
+  pesertaTerpilih = null;
+
+  resetParticipant();
+  resetSummary();
+
+  $('searchCard')
+    .classList.add('hidden');
+
+  $('eventDetail')
+    .classList.add('hidden');
+
+  hideStatus('eventStatus');
+
+  if (!selectedEventId) {
+    return;
+  }
+
   try {
-    showStatus('eventStatus','Memuat acara dan daftar peserta...','info');
-    const [eventResult,pesertaResult]=await Promise.all([
-      apiGet(API_URL+'?action=event&id_event='+encodeURIComponent(selectedEventId)),
-      apiGet(API_URL+'?action=peserta_absensi&id_event='+encodeURIComponent(selectedEventId))
-    ]);
-    selectedEvent=eventResult.event||null;
-    pesertaEvent=Array.isArray(pesertaResult.data)?pesertaResult.data.filter(p=>String(p.STATUS_PENDAFTARAN||'').trim().toUpperCase()==='TERDAFTAR'):[];
-    const ev=selectedEvent||{};
-    $('eventDetail').innerHTML='<b>'+escapeHtml(ev.JUDUL||selectedEventId)+'</b><br>📅 '+fmt(ev.TANGGAL)+' &nbsp; 🕐 '+fmt(ev.WAKTU)+'<br>📍 '+fmt(ev.TEMPAT);
-    $('eventDetail').classList.remove('hidden');
-    hideStatus('eventStatus');
-    $('searchCard').classList.remove('hidden');
-    if(!pesertaEvent.length) showStatus('searchStatus','Belum ada peserta dengan status TERDAFTAR pada acara ini.','error');
-  } catch(error) {
+
+    showStatus(
+      'eventStatus',
+      'Memuat konfigurasi acara dan data peserta...',
+      'info'
+    );
+
+    const results =
+      await Promise.all([
+
+        apiGet(
+          API_URL +
+          '?action=event&id_event=' +
+          encodeURIComponent(
+            selectedEventId
+          )
+        ),
+
+        apiGet(
+          API_URL +
+          '?action=peserta_absensi&id_event=' +
+          encodeURIComponent(
+            selectedEventId
+          )
+        )
+
+      ]);
+
+    selectedEvent =
+      results[0].event || null;
+
+    pesertaEvent =
+      Array.isArray(
+        results[1].data
+      )
+        ? results[1].data.filter(
+            function(participant) {
+              return String(
+                participant.STATUS_PENDAFTARAN ||
+                ''
+              )
+                .trim()
+                .toUpperCase() ===
+                'TERDAFTAR';
+            }
+          )
+        : [];
+
+    setSummary(
+      results[1].summary || {
+        total: pesertaEvent.length,
+        sudah_absen:
+          pesertaEvent.filter(
+            p => p.SUDAH_ABSEN
+          ).length,
+        belum_absen:
+          pesertaEvent.filter(
+            p => !p.SUDAH_ABSEN
+          ).length
+      }
+    );
+
+    renderEventDetail(
+      selectedEvent || {}
+    );
+
+    $('searchCard')
+      .classList.remove('hidden');
+
+    if (!pesertaEvent.length) {
+
+      showStatus(
+        'searchStatus',
+        'Belum ada peserta dengan status TERDAFTAR pada acara ini.',
+        'error'
+      );
+    }
+
+  } catch (error) {
+
     console.error(error);
-    showStatus('eventStatus',error.message||'Gagal memuat data acara.','error');
+
+    showStatus(
+      'eventStatus',
+      error.message ||
+      'Gagal memuat data acara.',
+      'error'
+    );
   }
 }
 
 function cariPeserta() {
-  $('resultCard').classList.add('hidden');
-  $('notFoundCard').classList.add('hidden');
-  hideStatus('searchStatus'); hideStatus('submitStatus');
-  pesertaTerpilih=null;
-  const keyword=$('namaSearch').value.trim();
-  if(!selectedEventId) { showStatus('searchStatus','Silakan pilih acara terlebih dahulu.','error'); return; }
-  if(!keyword) { showStatus('searchStatus','Silakan ketik nama peserta terlebih dahulu.','error'); return; }
-  const key=keyword.toLowerCase();
-  const exact=pesertaEvent.find(p=>String(p.NAMA||'').trim().toLowerCase()===key);
-  const partials=pesertaEvent.filter(p=>String(p.NAMA||'').toLowerCase().includes(key));
-  const found=exact || (partials.length===1 ? partials[0] : null);
-  if(!found) {
-    if(partials.length>1) showStatus('searchStatus','Ditemukan beberapa nama yang mirip. Silakan ketik nama lebih lengkap.','error');
-    $('notFoundCard').classList.remove('hidden');
+
+  resetParticipant();
+
+  const keyword =
+    $('namaSearch')
+      .value
+      .trim();
+
+  if (!selectedEventId) {
+
+    showStatus(
+      'searchStatus',
+      'Silakan pilih acara terlebih dahulu.',
+      'error'
+    );
+
     return;
   }
-  if(found.SUDAH_ABSEN) {
-    $('resultCard').classList.remove('hidden');
-    $('resultNama').textContent=found.NAMA||'-'; $('resultNIK').textContent=found.NIK||'-'; $('resultAsalPC').textContent=found.ASAL_PC||'-'; $('resultInstansi').textContent=found.INSTANSI||'-';
-    $('statusAbsensi').disabled=true; $('btnSubmit').disabled=true;
-    showStatus('submitStatus','Peserta ini sudah melakukan absensi untuk acara ini.','info');
+
+  if (!keyword) {
+
+    showStatus(
+      'searchStatus',
+      'Silakan ketik nama peserta terlebih dahulu.',
+      'error'
+    );
+
     return;
   }
-  pesertaTerpilih=found;
-  $('resultNama').textContent=found.NAMA||'-'; $('resultNIK').textContent=found.NIK||'-'; $('resultAsalPC').textContent=found.ASAL_PC||'-'; $('resultInstansi').textContent=found.INSTANSI||'-';
-  $('statusAbsensi').disabled=false; $('btnSubmit').disabled=false;
-  $('resultCard').classList.remove('hidden');
+
+  const key =
+    keyword.toLowerCase();
+
+  const exact =
+    pesertaEvent.find(
+      function(participant) {
+        return String(
+          participant.NAMA || ''
+        )
+          .trim()
+          .toLowerCase() ===
+          key;
+      }
+    );
+
+  const partials =
+    pesertaEvent.filter(
+      function(participant) {
+        return String(
+          participant.NAMA || ''
+        )
+          .toLowerCase()
+          .includes(key);
+      }
+    );
+
+  const found =
+    exact ||
+    (
+      partials.length === 1
+        ? partials[0]
+        : null
+    );
+
+  if (!found) {
+
+    if (partials.length > 1) {
+
+      showStatus(
+        'searchStatus',
+        'Ditemukan beberapa nama yang mirip. Silakan ketik nama lebih lengkap.',
+        'error'
+      );
+    }
+
+    $('notFoundCard')
+      .classList.remove('hidden');
+
+    return;
+  }
+
+  pesertaTerpilih =
+    found;
+
+  renderParticipant(found);
+
+  $('resultCard')
+    .classList.remove('hidden');
+
+  /*
+   * Jika sudah ada record valid di ABSENSI,
+   * peserta tidak boleh submit lagi.
+   */
+  if (found.SUDAH_ABSEN) {
+
+    $('attendanceInputArea')
+      .style.display = 'none';
+
+    $('alreadyAbsentBox').innerHTML =
+      'Peserta ini <b>sudah melakukan absensi</b> ' +
+      'untuk acara ini. Data absensi tidak dapat disubmit ulang.';
+
+    $('alreadyAbsentBox')
+      .classList.remove('hidden');
+
+    showStatus(
+      'submitStatus',
+      'Status absensi sudah tercatat.',
+      'info'
+    );
+
+    return;
+  }
+
+  const status =
+    String(
+      selectedEvent?.STATUS_ABSENSI_AKTUAL ||
+      selectedEvent?.STATUS_ABSENSI ||
+      'DITUTUP'
+    )
+      .trim()
+      .toUpperCase();
+
+  if (status !== 'DIBUKA') {
+
+    $('attendanceInputArea')
+      .style.display = 'none';
+
+    showStatus(
+      'submitStatus',
+      'Absensi untuk acara ini sudah ditutup.',
+      'error'
+    );
+  }
 }
 
 async function submitAbsensi() {
-  if(!selectedEventId || !pesertaTerpilih) { showStatus('submitStatus','Data peserta belum tersedia. Silakan cari nama kembali.','error'); return; }
-  const status=$('statusAbsensi').value;
-  if(!status) { showStatus('submitStatus','Silakan pilih jenis kehadiran.','error'); return; }
-  const button=$('btnSubmit'); button.disabled=true; button.textContent='MENYIMPAN...'; hideStatus('submitStatus');
+
+  if (
+    !selectedEventId ||
+    !pesertaTerpilih
+  ) {
+
+    showStatus(
+      'submitStatus',
+      'Data peserta belum tersedia. Silakan cari nama kembali.',
+      'error'
+    );
+
+    return;
+  }
+
+  if (pesertaTerpilih.SUDAH_ABSEN) {
+
+    showStatus(
+      'submitStatus',
+      'Peserta ini sudah melakukan absensi.',
+      'info'
+    );
+
+    return;
+  }
+
+  const status =
+    $('statusAbsensi')
+      .value;
+
+  if (!status) {
+
+    showStatus(
+      'submitStatus',
+      'Silakan pilih jenis kehadiran.',
+      'error'
+    );
+
+    return;
+  }
+
+  const button =
+    $('btnSubmit');
+
+  button.disabled = true;
+  button.textContent =
+    'MENYIMPAN...';
+
+  hideStatus('submitStatus');
+
   try {
-    const url=API_URL+'?action=simpan_absensi&id_event='+encodeURIComponent(selectedEventId)+'&nama='+encodeURIComponent(pesertaTerpilih.NAMA)+'&status='+encodeURIComponent(status);
-    const result=await apiGet(url);
-    showStatus('submitStatus',result.message||'Absensi berhasil disimpan.','success');
-    pesertaTerpilih.SUDAH_ABSEN=true;
-    $('statusAbsensi').disabled=true; $('btnSubmit').disabled=true;
-  } catch(error) {
+
+    const url =
+      API_URL +
+      '?action=simpan_absensi' +
+      '&id_event=' +
+      encodeURIComponent(
+        selectedEventId
+      ) +
+      '&nama=' +
+      encodeURIComponent(
+        pesertaTerpilih.NAMA
+      ) +
+      '&status=' +
+      encodeURIComponent(
+        status
+      );
+
+    const result =
+      await apiGet(url);
+
+    showStatus(
+      'submitStatus',
+      result.message ||
+      'Absensi berhasil disimpan.',
+      'success'
+    );
+
+    pesertaTerpilih.SUDAH_ABSEN =
+      true;
+
+    $('attendanceInputArea')
+      .style.display = 'none';
+
+    $('alreadyAbsentBox').innerHTML =
+      'Absensi berhasil dicatat sebagai <b>' +
+      escapeHtml(status) +
+      '</b>.';
+
+    $('alreadyAbsentBox')
+      .classList.remove('hidden');
+
+    /*
+     * Ambil ulang data agar angka statistik
+     * langsung berubah tanpa reload halaman.
+     */
+    const refreshed =
+      await apiGet(
+        API_URL +
+        '?action=peserta_absensi&id_event=' +
+        encodeURIComponent(
+          selectedEventId
+        )
+      );
+
+    pesertaEvent =
+      Array.isArray(
+        refreshed.data
+      )
+        ? refreshed.data
+        : pesertaEvent;
+
+    setSummary(
+      refreshed.summary
+    );
+
+  } catch (error) {
+
     console.error(error);
-    showStatus('submitStatus',error.message||'Gagal menyimpan absensi.','error');
-    button.disabled=false;
-  } finally { button.textContent='SUBMIT ABSENSI'; }
+
+    showStatus(
+      'submitStatus',
+      error.message ||
+      'Gagal menyimpan absensi.',
+      'error'
+    );
+
+    button.disabled = false;
+
+  } finally {
+
+    button.textContent =
+      'SUBMIT ABSENSI';
+  }
 }
 
 loadEvents();
