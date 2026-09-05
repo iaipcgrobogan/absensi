@@ -170,7 +170,11 @@ function escapeHtml(value) {
 }
 
 function fmt(value) {
-  return value ? escapeHtml(value) : '-';
+  return value !== null &&
+         value !== undefined &&
+         String(value).trim() !== ''
+    ? escapeHtml(String(value))
+    : '-';
 }
 
 function isYa(value, defaultValue) {
